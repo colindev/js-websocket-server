@@ -66,9 +66,10 @@ function broadcast(str){
 
 function broadcast_response_receive(str){
 
-    if ( ! str.match(/^broadcast-pong(:\d+)?$/)) return;
+    var m = str.match(/^broadcast-pong(:\d+)?$/);
+    if ( ! m) return;
 
-    log_time('broadcast-pong receive');
+    log_time('broadcast-pong receive [ '+m[1]+' ]');
 
     return true;
 }
