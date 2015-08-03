@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 var port = parseInt(process.argv[2], 10);
+var heartbeat = parseInt(process.argv[3], 10) || 30;
 var ws = require("nodejs-websocket");
 var qs = require('querystring');
 
@@ -34,6 +35,12 @@ var server = ws.createServer(function (conn) {
     })
 
 }).listen(port);
+
+setInterval(function(){
+    for (var id in conn_map) {
+        conn_map[id].send && conn_map[id].send(new Buffer(0));
+    }
+}, heartbeat * 1000);
 
 function log_time(tag, time){
     var d = new Date;
