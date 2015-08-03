@@ -10,12 +10,17 @@ var conn_map = {};
 var server = ws.createServer(function (conn) {
 
     var data = qs.parse(conn.path.replace(/^[^?]*\?/, '')),
-        key = data.key;
+        key = data.key,
+        id = conn.headers['sec-websocket-key'];
 
-    conn_map[data.key] && conn_map[data.key].close();
-    conn_map[data.key] = conn;
+    if (conn_map[id]) {
+        conn_map[id].close();
+        log_time('already exists conn '+id);
+    }
 
-    log_time('Connection: '+key);
+    conn_map[id] = conn;
+
+    log_time('Connection: key=['+key+'] id=['+id+']');
 
     conn.on("text", function (str) {
 
@@ -25,7 +30,7 @@ var server = ws.createServer(function (conn) {
 
     conn.on("close", function (code, reason) {
         log_time('Connection closed: '+key);
-        delete conn_map[key];
+        delete conn_map[id];
     })
 
 }).listen(port);
