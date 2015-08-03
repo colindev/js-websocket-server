@@ -39,7 +39,7 @@ var server = ws.createServer(function (conn) {
 setInterval(function(){
     var alive_conn = [];
     for (var id in conn_map) {
-        conn_map[id].send && conn_map[id].sendText(' ');
+        conn_map[id].sendText && conn_map[id].sendText('...');
         alive_conn.push(id);
     }
 
