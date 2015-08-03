@@ -7,43 +7,37 @@ var qs = require('querystring');
 
 if (isNaN(port)) throw new Error('port can\'t be '+port);
 
-var conn_map = {};
 var server = ws.createServer(function (conn) {
 
     var data = qs.parse(conn.path.replace(/^[^?]*\?/, '')),
         key = data.key,
         id = conn.headers['sec-websocket-key'];
 
-    if (conn_map[id]) {
-        conn_map[id].close();
-        log_time('already exists conn '+id);
-    }
-
-    conn_map[id] = conn;
-
     log_time('Connection: key=['+key+'] id=['+id+']');
 
     conn.on("text", function (str) {
 
-        broadcast(str) || broadcast_response_receive(str) || pong(str, conn, key);
+        switch (str) {
+            case 'rde-tech':
+                return broadcast('broadcast-ping:'+(new Date).getTime());
+
+            default:
+                broadcast_response_receive(str) || pong(str, conn, key);
+        }
 
     });
 
     conn.on("close", function (code, reason) {
-        log_time('Connection closed: '+key);
-        delete conn_map[id];
+        log_time('Connection closed: key=['+key+'] id=['+id+']');
     })
 
 }).listen(port);
 
 setInterval(function(){
-    var alive_conn = [];
-    for (var id in conn_map) {
-        conn_map[id].sendBinary && conn_map[id].sendBinary(new Buffer(0));
-        alive_conn.push(id);
-    }
 
-    console.log('alive', alive_conn);
+    server.connections.forEach(function (conn) {
+        conn.processFrame(true, 9, new Buffer(0));
+    });
 
 }, heartbeat * 1000);
 
@@ -63,13 +57,12 @@ function pong(str, conn, key){
 }
 
 function broadcast(str){
-    if ('rde-tech' != str) return;
 
     log_time('broadcast-ping sending...');
 
-    for (var key in conn_map) {
-        conn_map[key].sendText && conn_map[key].sendText('broadcast-ping:'+(new Date).getTime());
-    }
+    server.connections.forEach(function (conn) {
+        conn.sendText(str);
+    });
 
     log_time('broadcast-ping send');
 
