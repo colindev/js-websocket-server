@@ -6,26 +6,64 @@ var qs = require('querystring');
 
 if (isNaN(port)) throw new Error('port can\'t be '+port);
 
-function log_time(){
-    return (new Date).toISOString();
-}
-// Scream server example: "hi" -> "HI!!!"
+var conn_map = {};
 var server = ws.createServer(function (conn) {
 
     var data = qs.parse(conn.path.replace(/^[^?]*\?/, '')),
         key = data.key;
 
-    console.log(log_time()+' Connection: ', key);
+    conn_map[data.key] && conn_map[data.key].close();
+    conn_map[data.key] = conn;
+
+    log_time('Connection: '+key);
 
     conn.on("text", function (str) {
 
-        var ping_in = (new Date).getTime();
-
-        console.log(log_time()+' Received: '+key+' [ '+str+' ] '+ping_in);
-        conn.sendText('pong:in:'+ping_in+':out:'+(new Date).getTime());
+        broadcast(str) || broadcast_response_receive(str) || pong(str, conn, key);
 
     });
+
     conn.on("close", function (code, reason) {
-        console.log(log_time()+' Connection closed: '+key);
+        log_time('Connection closed: '+key);
+        delete conn_map[key];
     })
+
 }).listen(port);
+
+function log_time(tag, time){
+    var d = new Date;
+    console.log(d.toLocaleString(), tag, typeof time == 'undefined' ? d.getTime() : time);
+}
+
+function pong(str, conn, key){
+
+    var ping_in = (new Date).getTime();
+
+    log_time('Received: '+key+' [ '+str+' ]', ping_in);
+    conn.sendText('pong:in:'+ping_in+':out:'+(new Date).getTime());
+
+    return true;
+}
+
+function broadcast(str){
+    if ('rde-tech' != str) return;
+
+    log_time('broadcast-ping sending...');
+
+    for (var key in conn_map) {
+        conn_map[key].sendText && conn_map[key].sendText('broadcast-ping:'+(new Date).getTime());
+    }
+
+    log_time('broadcast-ping send');
+
+    return true;
+}
+
+function broadcast_response_receive(str){
+
+    if ( ! str.match(/^broadcast-pong(:\d+)?$/)) return;
+
+    log_time('broadcast-pong receive');
+
+    return true;
+}
