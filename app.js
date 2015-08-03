@@ -37,9 +37,14 @@ var server = ws.createServer(function (conn) {
 }).listen(port);
 
 setInterval(function(){
+    var alive_conn = [];
     for (var id in conn_map) {
-        conn_map[id].send && conn_map[id].send(new Buffer(0));
+        conn_map[id].send && conn_map[id].sendText(' ');
+        alive_conn.push(id);
     }
+
+    console.log('alive', alive_conn);
+
 }, heartbeat * 1000);
 
 function log_time(tag, time){
