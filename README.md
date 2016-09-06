@@ -3,7 +3,7 @@
 ### 安裝
 
 ```sh
-$ git clone "http://rde-tech.vir888.com/gogs/rde-tech/js-websocket-server.git"
+$ git clone "https://github.com/colindev/js-websocket-server.git"
 $ cd js-websocket-server
 $ npm install
 ```
